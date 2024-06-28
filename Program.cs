@@ -1,4 +1,6 @@
 using System;
+using System.CodeDom.Compiler;
+using System.Configuration;
 using System.IO.Ports;
 using System.Windows.Forms;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -17,127 +19,98 @@ namespace LCF
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
             Form1 form = new Form1();
-            Communication commHandler = new Communication(form);
-            commHandler.initReading();
+            c_keithley commHandlerKeithley = new c_keithley(form, "COM8", 9600, Parity.None, 8, StopBits.One,"\r",Handshake.XOnXOff,"\r", 500, 500);
+            c_sefelec commHandlerSefelec = new c_sefelec(form,"COM7",19200, Parity.None,8,StopBits.One,"\r",Handshake.XOnXOff,"\n", 500, 500);
+            commHandlerKeithley.initReading();
+            commHandlerSefelec.initReading();
             System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
-            timer.Interval = 1000; // Mise à jour toutes les 100 ms
-            timer.Tick += (sender, e) => {
-                
-                commHandler.ReadCurrentValue();
+            timer.Interval = 10000; // Mise à jour toutes les 10 ms
+            timer.Tick += (sender, e) =>
+            {
+                //commHandlerKeithley.ReadCurrentValue();
+                commHandlerSefelec.ReadCurrentValue();
             };
-            
+
             timer.Start();
             Application.Run(form);
-            
+
 
         }
     }
-    public class Communication
+
+    public class c_sefelec : Communication
+    {
+        public c_sefelec(Form1 inForm, string inPortCom, Int32 inBaudRate, Parity inParity, Int32 inDataSize, StopBits inStopBits, string inTerminator,Handshake inHandshake, string inNewLine, int inReadTimeout, int inWriteTimeout) : base(inForm, inPortCom, inBaudRate, inParity, inDataSize, inStopBits, inTerminator, inHandshake, inNewLine, inReadTimeout, inWriteTimeout)
         {
-            private SerialPort mySerialPort;
-            private Form1 form;
-            private bool waitingForReception = false;
-            private int cptRecept = 0;
-            private string bufferReception = "";
-            public Communication(Form1 inFrom)
-            {
-                this.form = inFrom;
-                mySerialPort = new SerialPort("COM7", 9600, Parity.None, 8, StopBits.One)
-                {
-                    Handshake = Handshake.XOnXOff,
-                    NewLine = "\r",
-                    ReadTimeout = 500,
-                    WriteTimeout = 500
-                };
-                mySerialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
-                mySerialPort.Open();
 
-
-            }
-
-            public void Open()
-            {
-                if (!mySerialPort.IsOpen)
-                {
-                    mySerialPort.Open();
-                }
-            }
-
-            public void Close()
-            {
-                if (mySerialPort.IsOpen)
-                {
-                    mySerialPort.Close();
-                }
-            }
-
-            ~Communication()
-            {
-                mySerialPort.Close();
-            }
-
-            private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
-            {
-                SerialPort sp = (SerialPort)sender;
-                try
-                {
-                    string indata = sp.ReadExisting();
-                    if (indata.EndsWith("\r"))  // Contains("#")
-                    {
-                    bufferReception += indata;
-                    Console.WriteLine("[RESULT]: "+ bufferReception);
-                    bufferReception = "";
-                    waitingForReception = false;
-                    }
-                    else
-                    {
-                    //Console.WriteLine("[RECEIVING]: " + indata);
-                    bufferReception += indata;
-                    }
-                }
-                catch (TimeoutException) {
-                    Console.WriteLine("[RECEPTION TIMEOUT]");
-                }
-            }
-
-        public void SendData(string data)
-        {
-            Console.Write("[SENDING]   " + data + "     ");
-            data += "\n";
-            try
-            {
-                //mySerialPort est initialisé et ouvert avant d'écrire des données
-                if (mySerialPort != null && mySerialPort.IsOpen)
-                {
-                    try { 
-                        mySerialPort.Write(data);
-                        Console.WriteLine("[SENT]");
-                    }
-                    catch(TimeoutException)
-                    {
-                        Console.WriteLine("[TIMEOUT]");
-                    }
-                    
-                }
-                else
-                {
-                    Console.WriteLine("Serial port is not open");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error: " + ex.Message);
-                // Rejeter l'exception pour la gestion ultérieure si nécessaire
-                throw;
-            }
         }
-
-        public void initReading()
+        public override void initReading()
         {
             if (!mySerialPort.IsOpen)
             {
                 Console.WriteLine("Serial port is not open.");
                 throw new InvalidOperationException("Serial port is not open.");
+            }
+            SendData("REM");
+            //SendData("*RST");
+            //SendData("*TST");
+            
+        }
+        public override string ReadCurrentValue() {
+            string result = "";
+            if (!mySerialPort.IsOpen)
+            {
+                Console.WriteLine("Serial port is not open.");
+                throw new InvalidOperationException("Serial port is not open.");
+            }
+            if (!waitingForReception)
+            {
+                SendData("MEAS");
+                SendData("MEAS?");
+                waitingForReception = true;
+            }
+            return result;
+        }
+
+        protected override void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
+        {
+
+            SerialPort sp = (SerialPort)sender;
+            try
+            {
+                string indata = sp.ReadExisting();
+                if (indata.EndsWith(this.terminator))
+                {
+                    bufferReception += indata;
+                    Console.WriteLine("[RX]: " + bufferReception);
+                    bufferReception = "";
+                    waitingForReception = false;
+                }
+                else
+                {
+                    Console.WriteLine("[RX Event]: " + indata);
+                    bufferReception += indata;
+                }
+            }
+            catch (TimeoutException)
+            {
+                Console.WriteLine("[RX TIMEOUT]");
+            }
+        }
+    }
+    public class c_keithley : Communication
+    {
+        public c_keithley(Form1 inForm, string inPortCom, Int32 inBaudRate, Parity inParity, Int32 inDataSize, StopBits inStopBits, string inTerminator, Handshake inHandshake, string inNewLine, int inReadTimeout, int inWriteTimeout) : base(inForm, inPortCom, inBaudRate, inParity, inDataSize, inStopBits,inTerminator, inHandshake, inNewLine, inReadTimeout, inWriteTimeout)
+        {
+
+        }
+
+        public override void initReading()
+        {
+            if (!mySerialPort.IsOpen)
+            {
+                Console.WriteLine("Serial port is not open.");
+                //throw new InvalidOperationException("Serial port is not open.");
             }
             //SendData(":SYST:AZER:STAT OFF");
             SendData("*RST");
@@ -150,10 +123,35 @@ namespace LCF
             SendData(":SENSe:FUNCtion 'VOLTage:AC'");
             SendData(":SENSe:VOLTage:DC:AVERage:STATe OFF");
             SendData(":SAMP:COUN 1");
-        }
 
-        public string ReadCurrentValue()
+        }
+        protected override void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
+        {
+
+            SerialPort sp = (SerialPort)sender;
+            try
             {
+                string indata = sp.ReadExisting();
+                if (indata.EndsWith(this.terminator))  // Contains("#")
+                {
+                    bufferReception += indata;
+                    Console.WriteLine("[RX]: " + bufferReception);
+                    bufferReception = "";
+                    waitingForReception = false;
+                }
+                else
+                {
+                    //Console.WriteLine("[RECEIVING]: " + indata);
+                    bufferReception += indata;
+                }
+            }
+            catch (TimeoutException)
+            {
+                Console.WriteLine("[RX TIMEOUT]");
+            }
+        }
+        public override string ReadCurrentValue()
+        {
             string result = "";
             if (!mySerialPort.IsOpen)
             {
@@ -168,8 +166,99 @@ namespace LCF
                 SendData(":READ?");
                 waitingForReception = true;
             }
-            
             return result;
+        }
+    }
+    public abstract class Communication
+    {
+        /*
+        <CR>: cariage return: "\r"
+        <LF>: Line Feed: "\n"
+
+        Le paramètre Newline est-il équivalent au paramètre terminator ?
+         */
+        protected SerialPort mySerialPort;
+        private Form1 form;
+        protected bool waitingForReception = false;
+        protected string bufferReception = "";
+        protected string terminator;
+        protected virtual void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e) { }
+        public virtual void initReading() { }
+        public abstract string ReadCurrentValue();
+
+        public Communication(Form1 inFrom, string inPortCom, Int32 inBaudRate, Parity inParity, Int32 inDataSize, StopBits inStopBits, string inTerminator, Handshake inHandshake, string inNewLine, int inReadTimeout, int inWriteTimeout)
+        {
+            this.form = inFrom;
+            this.terminator = inTerminator;
+            mySerialPort = new SerialPort(inPortCom, inBaudRate, inParity, inDataSize, inStopBits)
+            {
+                Handshake = inHandshake,
+                NewLine = inNewLine,
+                ReadTimeout = inReadTimeout,
+                WriteTimeout = inWriteTimeout
+            };
+            mySerialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
+            try
+            {
+                mySerialPort.Open();
+            }
+            catch (System.IO.FileNotFoundException ex)
+            {
+                Console.WriteLine("Port incompatible/indisponible.");
+                Console.WriteLine("Execption: "+ex);   
+            }
+            
+        }
+        ~Communication()
+        {
+            mySerialPort.Close();
+        }
+        public void Open()
+        {
+            if (!mySerialPort.IsOpen)
+            {
+                mySerialPort.Open();
+            }
+        }
+
+        public void Close()
+        {
+            if (mySerialPort.IsOpen)
+            {
+                mySerialPort.Close();
+            }
+        }
+        public void SendData(string data)
+        {
+            Console.Write("[TX] " + data + " [" + this.mySerialPort.PortName + "]");
+            data += this.terminator;
+            try
+            {
+                //mySerialPort est initialisé et ouvert avant d'écrire des données
+                if (mySerialPort != null && mySerialPort.IsOpen)
+                {
+                    try
+                    {
+                        mySerialPort.Write(data);
+                        Console.WriteLine(" [OK]");
+                    }
+                    catch (TimeoutException)
+                    {
+                        Console.WriteLine("[TX TIMEOUT]");
+                    }
+
+                }
+                else
+                {
+                    Console.WriteLine("Serial port is not open");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
+                // Rejeter l'exception pour la gestion ultérieure si nécessaire
+                throw;
             }
         }
     }
+}
