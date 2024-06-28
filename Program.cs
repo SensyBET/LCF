@@ -1,6 +1,7 @@
 using System;
 using System.IO.Ports;
 using System.Windows.Forms;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LCF
 {
@@ -17,33 +18,41 @@ namespace LCF
             ApplicationConfiguration.Initialize();
             Form1 form = new Form1();
             Communication commHandler = new Communication(form);
-
+            commHandler.initReading();
             System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
-            timer.Interval = 100; // Mise à jour toutes les 100 ms
+            timer.Interval = 1000; // Mise à jour toutes les 100 ms
             timer.Tick += (sender, e) => {
+                
                 commHandler.ReadCurrentValue();
             };
+            
             timer.Start();
             Application.Run(form);
+            
+
         }
     }
     public class Communication
         {
             private SerialPort mySerialPort;
             private Form1 form;
-
+            private bool waitingForReception = false;
+            private int cptRecept = 0;
+            private string bufferReception = "";
             public Communication(Form1 inFrom)
             {
                 this.form = inFrom;
                 mySerialPort = new SerialPort("COM7", 9600, Parity.None, 8, StopBits.One)
                 {
                     Handshake = Handshake.XOnXOff,
-                    NewLine = "\n",
+                    NewLine = "\r",
                     ReadTimeout = 500,
                     WriteTimeout = 500
                 };
                 mySerialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
                 mySerialPort.Open();
+
+
             }
 
             public void Open()
@@ -70,21 +79,45 @@ namespace LCF
             private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
             {
                 SerialPort sp = (SerialPort)sender;
-                string indata = sp.ReadExisting();
-                Console.WriteLine("Data Received: " + indata);
+                try
+                {
+                    string indata = sp.ReadExisting();
+                    if (indata.EndsWith("\r"))  // Contains("#")
+                    {
+                    bufferReception += indata;
+                    Console.WriteLine("[RESULT]: "+ bufferReception);
+                    bufferReception = "";
+                    waitingForReception = false;
+                    }
+                    else
+                    {
+                    //Console.WriteLine("[RECEIVING]: " + indata);
+                    bufferReception += indata;
+                    }
+                }
+                catch (TimeoutException) {
+                    Console.WriteLine("[RECEPTION TIMEOUT]");
+                }
             }
 
         public void SendData(string data)
         {
             Console.Write("[SENDING]   " + data + "     ");
-
+            data += "\n";
             try
             {
-                // Assurez-vous que mySerialPort est initialisé et ouvert avant d'écrire des données
+                //mySerialPort est initialisé et ouvert avant d'écrire des données
                 if (mySerialPort != null && mySerialPort.IsOpen)
                 {
-                    mySerialPort.Write(data);
-                    Console.WriteLine("[SENT]");
+                    try { 
+                        mySerialPort.Write(data);
+                        Console.WriteLine("[SENT]");
+                    }
+                    catch(TimeoutException)
+                    {
+                        Console.WriteLine("[TIMEOUT]");
+                    }
+                    
                 }
                 else
                 {
@@ -99,34 +132,43 @@ namespace LCF
             }
         }
 
-        public string ReadCurrentValue()
-            {
+        public void initReading()
+        {
             if (!mySerialPort.IsOpen)
             {
                 Console.WriteLine("Serial port is not open.");
                 throw new InvalidOperationException("Serial port is not open.");
             }
-
-               
-            SendData("INIT:CONT OFF");
+            //SendData(":SYST:AZER:STAT OFF");
+            SendData("*RST");
+            //SendData(":TRAC:CLE");
+            SendData(":INITiate:CONTinuous OFF");
             // Disable continuous initiation
             //SendData("INIT:CONT OFF");
-            //Thread.Sleep(100);
             //SendData("*TST?");
-            //Thread.Sleep(100);
             // Set sample count to 1
-            SendData("SAMP:COUN 1");
-            //Thread.Sleep(100);
+            SendData(":SENSe:FUNCtion 'VOLTage:AC'");
+            SendData(":SENSe:VOLTage:DC:AVERage:STATe OFF");
+            SendData(":SAMP:COUN 1");
+        }
 
-            // Set measurement function to DC Current
-            SendData("FUNC 'CURR:DC'");
-            //Thread.Sleep(100);
-            // Read the measurement
-            SendData("READ?");
-            Thread.Sleep(1000);
-            //Console.WriteLine(mySerialPort.ReadLine());
-            //Thread.Sleep(1000);
+        public string ReadCurrentValue()
+            {
             string result = "";
+            if (!mySerialPort.IsOpen)
+            {
+                Console.WriteLine("Serial port is not open.");
+                throw new InvalidOperationException("Serial port is not open.");
+            }
+            // Read the measurement
+            if (!waitingForReception)
+            {
+                //SendData(":ABORT");
+                //SendData(":DATA?");
+                SendData(":READ?");
+                waitingForReception = true;
+            }
+            
             return result;
             }
         }
