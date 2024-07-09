@@ -222,10 +222,10 @@
                        HorizontalAlignment="Left"
                        IsHitTestVisible="False" Height="25" Width="50" Grid.ColumnSpan="2"/>
                     <Button Content="Send" HorizontalAlignment="Left" Margin="434,10,0,0" VerticalAlignment="Top" Height="30" Width="92" Command="{Binding SendButtonCommand}" Grid.Column="1"/>
-                    <TabControl Margin="10,50,0,10" Grid.ColumnSpan="2" Width="487" HorizontalAlignment="Left">
+                    <TabControl Margin="10,50,0,10" Height="250" Grid.ColumnSpan="2" Width="487" VerticalAlignment="Top" HorizontalAlignment="Left">
                         <TabItem Header="Keithley">
                             <Grid Background="#FFE5E5E5">
-                                <Button Content="Mesure mux." HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="30" Width="92" Command="{Binding InitKeithleyButtonCommand}"/>
+                                <Button Content="Mesure mux." HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="30" Width="92" Command="{Binding InitKeithleyButtonCommand}" Grid.ColumnSpan="2"/>
                             </Grid>
                         </TabItem>
                         <TabItem Header="Sefelec">
@@ -239,15 +239,15 @@
                         VerticalAlignment="Top"
                         HorizontalAlignment="Left"
                         IsHitTestVisible="False" Height="25" Width="60" Grid.Column="1"><Run Language="fr-fr" Text="Historique"/><LineBreak/><Run Language="fr-fr"/><LineBreak/><Run Language="fr-fr"/><LineBreak/><Run Language="fr-fr"/></TextBlock>
-                    
+
                     <ListBox ItemsSource="{Binding CommandHistory}"
                      SelectedItem="{Binding SelectedCommandHistory}"
                      HorizontalAlignment="Left"
                      Background="#FFE5E5E5"
-                     Height="254" 
-                     Margin="486,72,0,0" 
+                     Height="227" 
+                     Margin="485,73,0,0" 
                      VerticalAlignment="Top"
-                    Grid.Column="1" Width="481" />
+                    Grid.Column="1" Width="480" />
                 </Grid>
             </TabItem>
         </TabControl>
