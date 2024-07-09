@@ -1,0 +1,255 @@
+﻿<Window x:Class="LCF_WPF.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:LCF_WPF.ViewModels"
+        xmlns:local="clr-namespace:LCF_WPF"
+        mc:Ignorable="d"
+        Title="Gestion Ports COM" Height="600" Width="1000">
+
+    <Window.Resources>
+        <ImageBrush x:Key="messageWatermark" ImageSource="pack://application:,,,/Views/message.png" AlignmentX="Left" Stretch="None" />
+    </Window.Resources>
+
+    <Window.DataContext>
+        <viewModels:MainViewModel />
+    </Window.DataContext>
+
+    <Grid Margin="0,0,0,0">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalAlignment="Left" VerticalAlignment="Top" Height="200" Margin="215,20,10,0">
+            <RichTextBox Margin="0,0,0,0"
+                 x:Name="RTBConsole"
+                 IsReadOnly="True"
+                 FontFamily="Consolas"
+                 VerticalAlignment="Top"
+                 Height="200"
+                 FontSize="12"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 ScrollViewer.CanContentScroll="True"
+                 ScrollViewer.PreviewMouseWheel="ScrollViewer_PreviewMouseWheel"
+                 ScrollViewer.ScrollChanged="ScrollViewer_ScrollChanged">
+                <FlowDocument>
+                    <Paragraph>
+                        <Run Text="{Binding ConsoleOutput, Mode=OneWay}" />
+                    </Paragraph>
+                </FlowDocument>
+            </RichTextBox>
+        </ScrollViewer>
+
+
+        <TabControl Margin="0,220,0,0">
+            <TabItem Header="Ports">
+                <Grid Background="#FFE5E5E5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="102*"/>
+                        <ColumnDefinition Width="97*"/>
+                        <ColumnDefinition Width="795*"/>
+                    </Grid.ColumnDefinitions>
+                    <ListBox ItemsSource="{Binding Port_list}" 
+                     DisplayMemberPath="Name"
+                     SelectedItem="{Binding SelectedPort}"
+                     HorizontalAlignment="Left" 
+                     Height="200" 
+                     Margin="10,10,0,0" 
+                     VerticalAlignment="Top"
+                     Width="200" Grid.ColumnSpan="3" />
+                    <!--d:ItemsSource="{d:SampleData ItemCount=5}"-->
+                    <Button Content="Scan ports" HorizontalAlignment="Left" Margin="16,10,0,0" VerticalAlignment="Top" Height="30" Width="92" Command="{Binding ScanButtonCommand}" Grid.Column="2"/>
+                    <Grid Margin="10,220,10,0" Height="80"  VerticalAlignment="Top" Grid.ColumnSpan="3">
+                        <!-- Définition des colonnes -->
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" BorderBrush="Black" BorderThickness="1" Margin="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Label Content="Port" Grid.Row="0" VerticalContentAlignment="Center" Margin="0,0,0,5" BorderBrush="Gray" BorderThickness="1"/>
+                                <Label Content="{Binding SelectedPort.Name}" Grid.Row="1" Grid.Column="0" VerticalContentAlignment="Center" Margin="5,5,5,5" />
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Label Content="Baudrate" Grid.Row="0" VerticalContentAlignment="Center" Margin="0,0,0,5" BorderBrush="Gray" BorderThickness="1"/>
+                                <ComboBox  Grid.Row="1" Margin="5,5,5,5" VerticalContentAlignment="Center" ItemsSource="{Binding collectionBaudrates}" SelectedItem="{Binding SelectedPort.baudRate, Mode=TwoWay}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="2" BorderBrush="Black" BorderThickness="1" Margin="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Label Content="Parité" Grid.Row="0" VerticalContentAlignment="Center" Margin="0,0,0,5" BorderBrush="Gray" BorderThickness="1"/>
+                                <ComboBox  Grid.Row="1" Margin="5,5,5,5" VerticalContentAlignment="Center" ItemsSource="{Binding collectionParity}" SelectedItem="{Binding SelectedPort.parity, Mode=TwoWay}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="3" BorderBrush="Black" BorderThickness="1" Margin="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Label Content="Data size" Grid.Row="0" VerticalContentAlignment="Center" Margin="0,0,0,5" BorderBrush="Gray" BorderThickness="1"/>
+                                <ComboBox  Grid.Row="1" Margin="5,5,5,5" VerticalContentAlignment="Center" ItemsSource="{Binding collectionDatasize}" SelectedItem="{Binding SelectedPort.dataSize, Mode=TwoWay}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="4" BorderBrush="Black" BorderThickness="1" Margin="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Label Content="Stop bits" Grid.Row="0" VerticalContentAlignment="Center" Margin="0,0,0,5" BorderBrush="Gray" BorderThickness="1"/>
+                                <ComboBox  Grid.Row="1" Margin="5,5,5,5" VerticalContentAlignment="Center" ItemsSource="{Binding collectionStopbits}" SelectedItem="{Binding SelectedPort.stopBits, Mode=TwoWay}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="5" BorderBrush="Black" BorderThickness="1" Margin="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Label Content="Terminator" Grid.Row="0" VerticalContentAlignment="Center" Margin="0,0,0,5" BorderBrush="Gray" BorderThickness="1"/>
+                                <ComboBox  Grid.Row="1" Margin="5,5,5,5" VerticalContentAlignment="Center" SelectedIndex="{Binding SelectedPort.terminator, Mode=TwoWay}" >
+                                    <ComboBoxItem Content="CR" Tag="&#x000D;" />
+                                    <ComboBoxItem Content="LF" Tag="&#x000A;" />
+                                    <ComboBoxItem Content="CR+LF" Tag="&#x000D;&#x000A;" />
+                                    <ComboBoxItem Content="LF+CR" Tag="&#x000A;&#x000D;" />
+                                </ComboBox>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="6" BorderBrush="Black" BorderThickness="1" Margin="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Label Content="Handshake" Grid.Row="0" VerticalContentAlignment="Center" Margin="0,0,0,5" BorderBrush="Gray" BorderThickness="1"/>
+                                <ComboBox  Grid.Row="1" Margin="5,5,5,5" VerticalContentAlignment="Center" ItemsSource="{Binding collectionHandshake}" SelectedItem="{Binding SelectedPort.handshake, Mode=TwoWay}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="7" BorderBrush="Black" BorderThickness="1" Margin="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Label Content="New line" Grid.Row="0" VerticalContentAlignment="Center" Margin="0,0,0,5" BorderBrush="Gray" BorderThickness="1" />
+                                <ComboBox  Grid.Row="1" Margin="5,5,5,5" VerticalContentAlignment="Center" SelectedIndex="{Binding SelectedPort.newLine, Mode=TwoWay}" >
+                                    <ComboBoxItem Content="CR" Tag="&#x000D;" />
+                                    <ComboBoxItem Content="LF" Tag="&#x000A;" />
+                                    <ComboBoxItem Content="CR+LF" Tag="&#x000D;&#x000A;" />
+                                    <ComboBoxItem Content="LF+CR" Tag="&#x000A;&#x000D;" />
+                                </ComboBox>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="8" BorderBrush="Black" BorderThickness="1" Margin="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Label Content="Read timeout" Grid.Row="0" VerticalContentAlignment="Center" Margin="0,0,0,5" BorderBrush="Gray" BorderThickness="1"/>
+                                <TextBox Text="{Binding SelectedPort.readTimeout}" Grid.Row="1" Grid.Column="0" VerticalContentAlignment="Center" Margin="5,5,5,5" />
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="9" BorderBrush="Black" BorderThickness="1" Margin="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Label Content="Write timeout" Grid.Row="0" VerticalContentAlignment="Center" Margin="0,0,0,5" BorderBrush="Gray" BorderThickness="1" />
+                                <TextBox Text="{Binding SelectedPort.writeTimeout}" Grid.Row="1" Grid.Column="0" VerticalContentAlignment="Center" Margin="5,5,5,5" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Communication" Height="20" VerticalAlignment="Center">
+                <Grid Background="#FFE5E5E5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="17*"/>
+                        <ColumnDefinition Width="977*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox TextWrapping="Wrap" VerticalContentAlignment="Center" Text="{Binding MessageToSend}" TextChanged="OnTextBoxTextChanged"  Margin="10,10,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30" Width="436" Grid.ColumnSpan="2"/>
+                    <!--Background="{StaticResource messageWatermark}"-->
+                    <TextBlock x:Name="PlaceholderText"
+                       Text="Data"
+                       Foreground="Black"
+                       Margin="15,15,0,0"
+                       VerticalAlignment="Top"
+                       HorizontalAlignment="Left"
+                       IsHitTestVisible="False" Height="25" Width="50" Grid.ColumnSpan="2"/>
+                    <Button Content="Send" HorizontalAlignment="Left" Margin="434,10,0,0" VerticalAlignment="Top" Height="30" Width="92" Command="{Binding SendButtonCommand}" Grid.Column="1"/>
+                    <TabControl Margin="10,50,0,10" Grid.ColumnSpan="2" Width="487" HorizontalAlignment="Left">
+                        <TabItem Header="Keithley">
+                            <Grid Background="#FFE5E5E5">
+                                <Button Content="Mesure mux." HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="30" Width="92" Command="{Binding InitKeithleyButtonCommand}"/>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="Sefelec">
+                            <Grid Background="#FFE5E5E5">
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
+                    <TextBlock x:Name="PlaceholderText_Historique"
+                        Foreground="Black"
+                        Margin="485,50,0,0"
+                        VerticalAlignment="Top"
+                        HorizontalAlignment="Left"
+                        IsHitTestVisible="False" Height="25" Width="60" Grid.Column="1"><Run Language="fr-fr" Text="Historique"/><LineBreak/><Run Language="fr-fr"/><LineBreak/><Run Language="fr-fr"/><LineBreak/><Run Language="fr-fr"/></TextBlock>
+                    
+                    <ListBox ItemsSource="{Binding CommandHistory}"
+                     SelectedItem="{Binding SelectedCommandHistory}"
+                     HorizontalAlignment="Left"
+                     Background="#FFE5E5E5"
+                     Height="254" 
+                     Margin="486,72,0,0" 
+                     VerticalAlignment="Top"
+                    Grid.Column="1" Width="481" />
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>
