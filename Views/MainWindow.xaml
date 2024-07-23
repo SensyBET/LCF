@@ -225,11 +225,12 @@
                     <TabControl Margin="10,50,0,10" Height="250" Grid.ColumnSpan="2" Width="487" VerticalAlignment="Top" HorizontalAlignment="Left">
                         <TabItem Header="Keithley">
                             <Grid Background="#FFE5E5E5">
-                                <Button Content="Mesure mux." HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="30" Width="92" Command="{Binding InitKeithleyButtonCommand}" Grid.ColumnSpan="2"/>
+                                <Button Content="Mesure mux." HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="30" Width="102" Command="{Binding InitKeithleyButtonCommand}" Grid.ColumnSpan="2"/>
                             </Grid>
                         </TabItem>
                         <TabItem Header="Sefelec">
                             <Grid Background="#FFE5E5E5">
+                                <Button Content="Mesure isolation" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="30" Width="102" Command="{Binding MesureSefelecButtonCommand}"/>
                             </Grid>
                         </TabItem>
                     </TabControl>

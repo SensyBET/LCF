@@ -54,6 +54,7 @@ namespace LCF_WPF.ViewModels
         public ICommand SendButtonCommand { get; }
 
         public ICommand InitKeithleyButtonCommand { get; }
+        public ICommand MesureSefelecButtonCommand { get; }
 
         private string _messageToSend;
         public ObservableCollection<int> collectionBaudrates { get; set; }
@@ -129,6 +130,7 @@ namespace LCF_WPF.ViewModels
             ScanButtonCommand = new RelayCommand(ExecuteScanButtonCommand);
             SendButtonCommand = new RelayCommand(ExecuteSendButtonCommand);
             InitKeithleyButtonCommand = new RelayCommand(ExecuteInitKeithleyButtonCommand);
+            MesureSefelecButtonCommand = new RelayCommand(ExecuteMesureSefelecButtonCommand);
 
             scanForPorts();
         }
@@ -215,10 +217,41 @@ namespace LCF_WPF.ViewModels
 
             Console.WriteLine();
         }
+
+        private async void ExecuteMesureSefelecButtonCommand(object parameter)
+        {
+            int timeoutMeas = 0;
+            Console.WriteLine("Envoi des commandes pour mesure sur appareil SEFELEC");
+
+            _selectedPort.SendData("REM");
+            await Task.Delay(1000);
+            _selectedPort.SendData("*RST");
+            await Task.Delay(1000);
+            _selectedPort.SendData("REM");
+            await Task.Delay(1000);
+            _selectedPort.SendData("SRQ");
+            await Task.Delay(1000);
+            _selectedPort.SendData("MEG");
+            await Task.Delay(1000);
+            _selectedPort.SendData("DCV 50");
+            await Task.Delay(1000);
+            _selectedPort.SendData("MEAS");
+            Console.WriteLine();
+            while (!_selectedPort.xMeasReady) { 
+                Console.WriteLine("Attente fin de mesure");
+                await Task.Delay(1000);
+                timeoutMeas++;
+                if (timeoutMeas == 10) {break; }
+            }
+            if (_selectedPort.xMeasReady)
+            {
+                _selectedPort.SendData("MEAS?");
+            }
+                _selectedPort.xMeasReady = false;
+            
+        }
         private void ExecuteScanButtonCommand(object parameter)
         {
-            // Logique à exécuter lors du clic sur le bouton
-            //ConsoleOutput += "Bouton cliqué !\n";
             Console.WriteLine("Scan des ports COM");
             foreach (Port port in _portList)
             {
@@ -233,8 +266,6 @@ namespace LCF_WPF.ViewModels
 
         private void ExecuteSendButtonCommand(object parameter)
         {
-            // Logique à exécuter lors du clic sur le bouton
-            //ConsoleOutput += "Bouton cliqué !\n";
             if (_selectedPort != null) {
                 _selectedPort.SendData(_messageToSend);
                 CommandHistory.Add(new string(_messageToSend));

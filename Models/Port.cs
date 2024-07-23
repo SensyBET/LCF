@@ -9,6 +9,7 @@ namespace LCF_WPF.Models
 { 
     public class Port
     {
+        private List<string> sendBuffer = new List<string>();
         private bool startRX = false;
         public string Name { get; set; }
         private Parity _parity;
@@ -36,6 +37,13 @@ namespace LCF_WPF.Models
         public bool waitingForReception = false;
 
         public string bufferReception = "";
+
+        public bool xMeasReady = false;
+
+        int asciiCR = 13; // CR (Carriage Return)
+        int asciiLF = 10; // LF (Line Feed)
+        int asciiDC1 = 17; // DC1 (Device Control 1) XON
+        int asciiDC3 = 19; // DC3 (Device Control 3) XOFF
 
         List<string> collectionTerminator = new List<string>
         {
@@ -81,6 +89,21 @@ namespace LCF_WPF.Models
             try
             {
                 string indata = sp.ReadExisting();
+
+
+                foreach (char c in indata) {
+                    if (c == (char)asciiDC1)
+                    {
+                        Console.WriteLine("[TX CHECK][RX] DC1 (XON)");
+                        waitingForReception = false;
+                    }
+                    else if (c == (char)asciiDC3)
+                    {
+                        Console.WriteLine("[RX] DC3 (XOFF)");
+                        waitingForReception = true;
+                    }
+                }
+                if (indata == "Z") { xMeasReady = true; }
                 if (indata.EndsWith(this.collectionTerminator[terminator]))
                 {
                     Console.WriteLine();
@@ -102,6 +125,7 @@ namespace LCF_WPF.Models
                     {
                         Console.Write(indata);
                     }
+                    
                     bufferReception += indata;
                 }
             }
@@ -111,9 +135,9 @@ namespace LCF_WPF.Models
             }
         }
 
-        public void SendData(string data)
+
+        public async void SendData(string data)
         {
-            
             try
             {
                 if (serialPort != null)
@@ -125,18 +149,36 @@ namespace LCF_WPF.Models
                             serialPort.Open();
                         }
                         catch (Exception ex) { Console.WriteLine("Ouverture du port impossible, exception: " + ex); }
-                    Console.Write("[TX] [" + this.serialPort.PortName + "]" + data);
-                    data += collectionTerminator[this.terminator];
-
                     
+
                     //mySerialPort est initialisé et ouvert avant d'écrire des données
                     if (serialPort.IsOpen)
                     {
 
                         try
                         {
+                            
+                            Console.WriteLine("[TX] [" + this.serialPort.PortName + "]" + data);
+                            data += collectionTerminator[this.terminator];
                             serialPort.Write(data);
-                            Console.WriteLine("[TX CHECK]");
+                            /*
+                            if (!waitingForReception)
+                            {
+                                Console.Write("[TX] [" + this.serialPort.PortName + "]" + data);
+                                data += collectionTerminator[this.terminator];
+                                serialPort.Write(data);
+                                waitingForReception = true;
+                            }
+                            else if(this.handshake == Handshake.XOnXOff || this.handshake == Handshake.None)
+                            {
+                                Console.WriteLine("Attente XON, envoi impossible.");
+                                await WaitForXonAsync(); // Attendre la réception de XON
+                                Console.Write("[TX] [" + this.serialPort.PortName + "]" + data);
+                                data += collectionTerminator[this.terminator];
+                                serialPort.Write(data);
+                                waitingForReception = true;
+                            }
+                            */
                         }
                         catch (TimeoutException)
                         {
@@ -158,6 +200,23 @@ namespace LCF_WPF.Models
                 // throw;
             }
         }
+
+        private async Task WaitForXonAsync()
+        {
+            await Task.Run(() =>
+            {
+                Console.Write("Attente XON");
+                while (waitingForReception)
+                {
+                    // Attendre que waitingForReception passe à false
+                    // Ajoutez une petite pause pour éviter une boucle de haute consommation CPU
+                    Console.Write(".");
+                    Task.Delay(1000).Wait();
+                }
+                Console.WriteLine();
+            });
+        }
+
 
     }
 }
